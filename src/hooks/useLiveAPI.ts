@@ -5,15 +5,32 @@ import { LiveServerMessage, Modality } from '@google/genai';
 export function useLiveAPI() {
   const [isActive, setIsActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [transcripts, setTranscripts] = useState<{ role: 'user' | 'model'; text: string }[]>([]);
+  const [callHistory, setCallHistory] = useState<{ id: string; timestamp: number; duration: number }[]>(() => {
+    const saved = localStorage.getItem('ss_call_history');
+    return saved ? JSON.parse(saved) : [];
+  });
   
   const sessionRef = useRef<any>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioWorkletNodeRef = useRef<AudioWorkletNode | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const nextStartTimeRef = useRef<number>(0);
+  const callStartTimeRef = useRef<number>(0);
 
   const stopCall = useCallback(() => {
+    if (isActive && callStartTimeRef.current > 0) {
+      const duration = Math.floor((Date.now() - callStartTimeRef.current) / 1000);
+      const newCall = {
+        id: Date.now().toString(),
+        timestamp: callStartTimeRef.current,
+        duration
+      };
+      setCallHistory(prev => {
+        const updated = [newCall, ...prev].slice(0, 50);
+        localStorage.setItem('ss_call_history', JSON.stringify(updated));
+        return updated;
+      });
+    }
+
     if (sessionRef.current) {
       sessionRef.current.close();
       sessionRef.current = null;
@@ -29,7 +46,8 @@ export function useLiveAPI() {
     setIsActive(false);
     setIsConnecting(false);
     nextStartTimeRef.current = 0;
-  }, []);
+    callStartTimeRef.current = 0;
+  }, [isActive]);
 
   const startCall = useCallback(async () => {
     setIsConnecting(true);
@@ -43,6 +61,7 @@ export function useLiveAPI() {
           onopen: () => {
             setIsActive(true);
             setIsConnecting(false);
+            callStartTimeRef.current = Date.now();
             console.log("Live session opened");
             
             // Start capturing audio
@@ -78,7 +97,7 @@ export function useLiveAPI() {
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: "Zephyr" } },
           },
-          systemInstruction: "You are a helpful and conversational AI agent. Speak naturally and clearly.",
+          systemInstruction: "You are the SecureShield Insurance Support Voice Agent. Speak professionally, clearly, and empathetically. You assist customers with insurance queries and policy guidance in real-time. Keep responses concise and easy to understand over voice.",
         }
       });
 
@@ -149,10 +168,17 @@ export function useLiveAPI() {
     nextStartTimeRef.current += audioBuffer.duration;
   };
 
+  const clearCallHistory = useCallback(() => {
+    setCallHistory([]);
+    localStorage.removeItem('ss_call_history');
+  }, []);
+
   return {
     isActive,
     isConnecting,
+    callHistory,
     startCall,
     stopCall,
+    clearCallHistory,
   };
 }

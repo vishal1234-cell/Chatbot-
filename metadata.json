@@ -1,6 +1,6 @@
 {
-  "name": "Nexus AI Agent",
-  "description": "Advanced AI Agent featuring both text-based chat and real-time voice 'calling' using Gemini Multimodal Live API.",
+  "name": "SecureShield Insurance Agent",
+  "description": "Professional AI Support Agent for SecureShield Insurance. Provides policy information, claim status, and general insurance guidance via chat and real-time voice.",
   "requestFramePermissions": ["microphone"],
-  "majorCapabilities": ["Real-time Voice", "Streaming Chat", "AI Powered"]
+  "majorCapabilities": ["Insurance Guidance", "Claims Support", "Real-time Voice", "Streaming Chat"]
 }
